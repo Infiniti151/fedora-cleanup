@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-path=(/home/*)
+path=(/home/* /var)
 
 clear_log(){
 	if [ $(du -s ${path[0]}/clean.log | awk '{print $1}') -gt 12 ];then
@@ -52,9 +52,9 @@ echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
 calculate_size "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
 calculate_size "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js"
 calculate_size "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
-calculate_size "DNF cache" "/var/cache/libdnf5"
-calculate_size "Coredumps" "/var/lib/systemd/coredump"
-calculate_size "Journal logs" "/var/log/journal"
+calculate_size "DNF cache" "${path[1]}/cache/libdnf5"
+calculate_size "Coredumps" "${path[1]}/lib/systemd/coredump"
+calculate_size "Journal logs" "${path[1]}/log/journal"
 
 nvidia=(nsight-compute nsight-systems)
 for i in "${nvidia[@]}"
@@ -115,5 +115,7 @@ if [ $x -gt 2 ];then
 	fi
 fi
 
-add_to_log "Total storage recovered" $(convert_to_GB $total)
-echo -e "\nTotal storage recovered: \033[0;32m$(convert_to_GB $total)\033[0m"
+total=$(convert_to_GB $total)
+add_to_log "Total storage recovered" "$total"
+echo -e "\nTotal storage recovered: \033[0;32m$total\033[0m"
+
