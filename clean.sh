@@ -51,13 +51,13 @@ clear_cache(){
 
 clear_nvidia(){
 	nvidia=(nsight-compute nsight-systems)
+	IFS=$'\n'           ## only word-split on '\n'
 	for i in "${nvidia[@]}"
 	do
 		x=$(ls -l "$3/$i" | grep -c ^d)
 		if [ $x -gt 1 ];then
 			readarray a < <(ls "$3/$i")
 			echo -e "Total folders in \033[0;35m$i\033[0m: \033[0;36m${#a[@]}\033[0m"
-			IFS=$'\n'           ## only word-split on '\n'
 			a=( $(printf "%s\n" ${a[@]} | sort -r ) )  ## reverse sort
 			echo -e "Keeping \033[0;32m$a\033[0m"
 			unset a[0]
@@ -81,7 +81,6 @@ clear_nvidia(){
 		readarray b < <(ls $4 | grep "$2-[1-9][1-9].[1-9]$" | sort -r)
 		echo -e "Total folders of major versions \033[0;35m$2-xx\033[0m: \033[0;36m${#a[@]}\033[0m"
 		echo -e "Total folders of minor versions \033[0;35m$2-xx.x\033[0m: \033[0;36m${#b[@]}\033[0m"
-		IFS=$'\n'           ## only word-split on '\n'
 		a=( $(printf "%s\n" ${a[@]}) )
 		b=( $(printf "%s\n" ${b[@]}) )
 		if [ ${#a[@]} -gt 1 ];then
@@ -89,8 +88,8 @@ clear_nvidia(){
 			unset a[0]
 			for i in "${a[@]}"
 			do
-			sudo unlink "$4/$i"
-			echo -e "Deleted \033[0;31m$i\033[0m"
+				sudo unlink "$4/$i"
+				echo -e "Deleted \033[0;31m$i\033[0m"
 			done
 		fi
 		if [ ${#b[@]} -gt 1 ];then
@@ -99,10 +98,10 @@ clear_nvidia(){
 			cache=0
 			for i in "${b[@]}"
 			do
-			cuda_cache=$(du -s $4/$i | awk '{print $1}')
-			cache=$(($cache + $cuda_cache))
-			sudo rm -rf "$4/$i"
-			echo -e "Deleted \033[0;31m$i: \033[0m"$(convert_to_GB $cuda_cache)
+				cuda_cache=$(du -s $4/$i | awk '{print $1}')
+				cache=$(($cache + $cuda_cache))
+				sudo rm -rf "$4/$i"
+				echo -e "Deleted \033[0;31m$i: \033[0m"$(convert_to_GB $cuda_cache)
 			done
 			add_to_log "$1-$2" $(convert_to_GB $cache)
 			calculate_total
@@ -125,4 +124,3 @@ clear_nvidia "Nvidia" "cuda" "/opt/nvidia" "/usr/local"
 total=$(convert_to_GB $total)
 add_to_log "Total storage recovered" "$total"
 echo -e "\nTotal storage recovered: \033[0;32m$total\033[0m"
-
