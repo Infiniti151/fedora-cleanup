@@ -24,7 +24,7 @@ calculate_total(){
     total=$((total + cache))
 }
 
-calculate_size(){
+clear_cache(){
     if [ "$1" != "Edge cache" ];then
 	    cache=$(du -s $2 | awk '{print $1}')
 	else
@@ -36,7 +36,7 @@ calculate_size(){
 		if [ "$1" == "DNF cache" ];then
 		    dnf clean all > /dev/null
 		elif [ "$1" == "Edge cache" ];then
-		    rm -rf $2/* $3/*
+		    rm -r $2/* "$3"/*
 		else
 		    rm -rf $2/*
 		fi
@@ -49,12 +49,12 @@ clear_log
 
 echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
 
-calculate_size "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
-calculate_size "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js"
-calculate_size "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
-calculate_size "DNF cache" "${path[1]}/cache/libdnf5"
-calculate_size "Coredumps" "${path[1]}/lib/systemd/coredump"
-calculate_size "Journal logs" "${path[1]}/log/journal"
+clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
+clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js"
+clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
+clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
+clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
+clear_cache "Journal logs" "${path[1]}/log/journal"
 
 nvidia=(nsight-compute nsight-systems)
 for i in "${nvidia[@]}"
