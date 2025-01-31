@@ -38,7 +38,7 @@ clear_cache(){
 			    dnf clean all > /dev/null
 			;;
 			"Edge cache")
-			    rm -r $2/* "$3"/*
+			    rm -r $2/* "$3"/* "$4"/*
 			;;
 			*)
 			    rm -rf $2/*
@@ -114,7 +114,8 @@ clear_log
 echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
 
 clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
-clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js"
+clear_cache "Pip cache" "${path[0]}/.cache/pip"
+clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage"
 clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
 clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
 clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
