@@ -28,7 +28,7 @@ clear_cache(){
     if [ "$1" != "Edge cache" ];then
 	    cache=$(du -s $2 | awk '{print $1}')
 	else
-	    cache=$(($(du -s $2 | awk '{print $1}') + $(du -s "$3" | awk '{print $1}')))
+	    cache=$(($(du -s $2 | awk '{print $1}') + $(du -s "$3" | awk '{print $1}') + $(du -s "$4" | awk '{print $1}') + $(du -c $5/*.blob | awk '/total/ {print $1}') + $(du -s $6 | awk '{print $1}')))
 	fi
 	calculate_GB $cache
 	if [ "$fin" != "0.00 GB" ];then
@@ -39,6 +39,8 @@ clear_cache(){
 			;;
 			"Edge cache")
 			    rm -r $2/* "$3"/* "$4"/*
+				rm -rf $5/*.blob
+				sudo find $6/* -maxdepth 0 -type f -not -iname "en-US.pak" -exec rm -r {} \;
 			;;
 			*)
 			    rm -rf $2/*
@@ -115,7 +117,7 @@ echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
 
 clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
 clear_cache "Pip cache" "${path[0]}/.cache/pip"
-clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage"
+clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "/opt/microsoft/msedge/locales"
 clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
 clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
 clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
