@@ -1,7 +1,10 @@
-# fedora-cleanup
+# 🧹 fedora-cleanup
 
 A cleanup script to clear caches and logs in Fedora (Tested in Fedora 41)
 
+---
+
+## 📝 List of caches
 This script cleans the following:
 1. Thumbnails cache ($HOME/.cache/thumbnails/x-large)
 2. Pip cache ($HOME/.cache/pip)
@@ -15,14 +18,18 @@ This script cleans the following:
 10. Old Nvidia nsight-systems folders (/opt/Nvidia/nsight-systems/xxxx.x.x)
 11. Old Nvidia CUDA folders (/usr/local/cuda-xx.x)
 
-Notes:
+---
+
+## 📒 Notes
 1. Needs to be run as sudo to delete files in /var, /opt, and /usr
 2. Logs are stored in $HOME/clean.log
 
+---
+
+## 🖥️ Screenshots
 Terminal screenshot:
 ![alt text](/images/terminal.png)
 
 Log screenshot:
 ![alt text](/images/log.png)
-
 
