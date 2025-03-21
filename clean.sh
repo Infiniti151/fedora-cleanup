@@ -25,27 +25,36 @@ calculate_total(){
 }
 
 clear_cache(){
-    if [ "$1" != "Edge cache" ];then
-	    cache=$(du -s $2 | awk '{print $1}')
-	else
-	    cache=$(($(du -s $2 | awk '{print $1}') + $(du -s "$3" | awk '{print $1}') + $(du -s "$4" | awk '{print $1}') + $(du -c $5/*.blob | awk '/total/ {print $1}') + $(du -s $6 | awk '{print $1}')))
-	fi
+	case $1 in
+		"Edge cache")
+			cache=$(($(du -s $2 | awk '{print $1}') + $(du -s "$3" | awk '{print $1}') + $(du -s "$4" | awk '{print $1}') + $(du -s "$5" | awk '{print $1}') + $(du -c $6/*.blob | awk '/total/ {print $1}') + $(du -s "$7" | awk '{print $1}') + $(du -s $8 | awk '{print $1}')))
+		;;
+		"Code cache")
+			cache=$(($(du -s $2 | awk '{print $1}') + $(du -s $3 | awk '{print $1}') + $(du -s $4 | awk '{print $1}') + $(du -s $5 | awk '{print $1}') + $(du -s $6 | awk '{print $1}')))
+		;;
+		*)
+			cache=$(du -s $2 | awk '{print $1}')
+		;;
+	esac
 	calculate_GB $cache
 	if [ "$fin" != "0.00 GB" ];then
 	        calculate_total
 	        case $1 in
-			"DNF cache")
-			    dnf clean all > /dev/null
-			;;
-			"Edge cache")
-			    rm -r $2/* "$3"/* "$4"/*
-				rm -rf $5/*.blob
-				sudo find $6/* -maxdepth 0 -type f -not -iname "en-US.pak" -exec rm -r {} \;
-			;;
-			*)
-			    rm -rf $2/*
-			;;
-		esac
+				"DNF cache")
+					dnf clean all > /dev/null
+				;;
+				"Edge cache")
+					rm -r $2/* "$3"/* "$4"/* "$5"/* "$7" 2>&1
+					rm -rf $6/*.blob 2>&1
+					sudo find $8/* -maxdepth 0 -type f -not -iname "en-US.pak" -exec rm -r {} \; 2>&1
+				;;
+				"Code cache")
+					rm -rf $2/* $3/* $4/* $5/* $6/* 2>&1
+				;;
+				*)
+					rm -rf $2/* 2>&1
+				;;
+			esac
 		echo -e "Deleted \033[0;35m$1: \033[0m"$fin
                 add_to_log "$1" "$fin"
     fi
@@ -117,7 +126,8 @@ echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
 
 clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
 clear_cache "Pip cache" "${path[0]}/.cache/pip"
-clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "/opt/microsoft/msedge/locales"
+clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/Service Worker/ScriptCache" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "${path[0]}/.config/microsoft-edge/Default/load_statistics.db" "/opt/microsoft/msedge/locales"
+clear_cache "Code cache" "${path[0]}/.config/Code/CachedExtensionVSIXs" "${path[0]}/.config/Code/Cache/Cache_Data" "${path[0]}/.config/Code/User/workspaceStorage" "${path[0]}/.config/Code/CachedData" "${path[0]}/.config/Code/GPUCache"
 clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
 clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
 clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
