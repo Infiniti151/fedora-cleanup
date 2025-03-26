@@ -13,7 +13,7 @@ convert_to_GB(){
 }
 
 add_to_log(){
-    echo "$1: $2" >> ${path[0]}/clean.log
+    echo -e "$1: $2" >> ${path[0]}/clean.log
 }
 
 calculate_GB(){
@@ -55,7 +55,7 @@ clear_cache(){
 					rm -rf $2/* 2>&1
 				;;
 			esac
-		echo -e "Deleted \033[0;35m$1: \033[0m"$fin
+		echo -e "Deleted \033[0;35m$1: \033[0;31m$fin\033[0m"
                 add_to_log "$1" "$fin"
     fi
 }
@@ -122,7 +122,7 @@ clear_nvidia(){
 
 clear_log
 
-echo "-----$(date +'%d/%m/%y %r')-----" >> ${path[0]}/clean.log
+echo "------$(date +'%d/%m/%y %r')------" >> ${path[0]}/clean.log
 
 clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
 clear_cache "Pip cache" "${path[0]}/.cache/pip"
@@ -135,5 +135,5 @@ clear_cache "Journal logs" "${path[1]}/log/journal"
 clear_nvidia "Nvidia" "cuda" "/opt/nvidia" "/usr/local"
 
 total=$(convert_to_GB $total)
-add_to_log "Total storage recovered" "$total"
+add_to_log "--------------------------------\nTotal storage recovered" "$total"
 echo -e "\nTotal storage recovered: \033[0;32m$total\033[0m"
