@@ -79,7 +79,7 @@ clear_nvidia(){
 			   nvidia_cache=$(du -s $3/$i/$j | awk '{print $1}')
 			   cache=$(($cache + $nvidia_cache))
 			   sudo rm -rf "$3/$i/$j"
-			   echo -e "Deleted \033[0;31m$j: \033[0m"$(convert_to_GB $nvidia_cache $i)
+			   echo -e "Deleted \033[0;31m$j: \033[0;33m$(convert_to_GB $nvidia_cache $i)\033[0m"
 			done
 			add_to_log "$1-$i" $(convert_to_GB $cache)
 			calculate_total
@@ -112,7 +112,7 @@ clear_nvidia(){
 				cuda_cache=$(du -s $4/$i | awk '{print $1}')
 				cache=$(($cache + $cuda_cache))
 				sudo rm -rf "$4/$i"
-				echo -e "Deleted \033[0;31m$i: \033[0m"$(convert_to_GB $cuda_cache)
+				echo -e "Deleted \033[0;31m$i: \033[0;33m$(convert_to_GB $cuda_cache)\033[0m"
 			done
 			add_to_log "$1-$2" $(convert_to_GB $cache)
 			calculate_total
