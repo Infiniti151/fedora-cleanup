@@ -24,10 +24,14 @@ calculate_total(){
     total=$((total + cache))
 }
 
+check_executable(){
+	[[ $(which $1 > /dev/null 2>&1 && echo $?) == "0" ]]
+}
+
 clear_cache(){
 	case $1 in
 		"Edge cache")
-			cache=$(($(du -s $2 | awk '{print $1}') + $(du -s "$3" | awk '{print $1}') + $(du -s "$4" | awk '{print $1}') + $(du -s "$5" | awk '{print $1}') + $(du -c $6/*.blob | awk '/total/ {print $1}') + $(du -s "$7" | awk '{print $1}') + $(du -s $8 | awk '{print $1}')))
+			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d "$3" ] && du -c "$3" | awk '/total/ {print $1}' || echo 0) + $([ -d "$4" ] && du -c "$4" | awk '/total/ {print $1}' || echo 0) + $([ -d "$5" ] && du -c "$5" | awk '/total/ {print $1}' || echo 0) + $([ -f $6/*.blob ] && du -c $6/*.blob | awk '/total/ {print $1}' || echo 0) + $([ -f "$7" ] && du -c "$7" | awk '/total/ {print $1}' || echo 0) + $(du -s $8 | awk '{print $1}')))
 		;;
 		"Code cache")
 			cache=$(($(du -s $2 | awk '{print $1}') + $(du -s $3 | awk '{print $1}') + $(du -s $4 | awk '{print $1}') + $(du -s $5 | awk '{print $1}') + $(du -s $6 | awk '{print $1}')))
@@ -44,7 +48,14 @@ clear_cache(){
 					dnf clean all > /dev/null
 				;;
 				"Edge cache")
-					rm -r $2/* "$3"/* "$4"/* "$5"/* "$7" 2>&1
+				        edge_arr=("$2" "$3" "$4" "$5" "$7")
+				        for item in "${edge_arr[@]}"; do 
+				        	if [ -d "$item" ]; then
+						  rm -r "$item"/* 2>&1
+						elif [ -f "$item" ];then
+						  rm "$item" 2>&1
+						fi
+				        done
 					rm -rf $6/*.blob 2>&1
 					sudo find $8/* -maxdepth 0 -type f -not -iname "en-US.pak" -exec rm -r {} \; 2>&1
 				;;
@@ -126,9 +137,10 @@ echo "------$(date +'%d/%m/%y %r')------" >> ${path[0]}/clean.log
 
 clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
 clear_cache "Pip cache" "${path[0]}/.cache/pip"
-clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/Service Worker/ScriptCache" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "${path[0]}/.config/microsoft-edge/Default/load_statistics.db" "/opt/microsoft/msedge/locales"
-clear_cache "Code cache" "${path[0]}/.config/Code/CachedExtensionVSIXs" "${path[0]}/.config/Code/Cache/Cache_Data" "${path[0]}/.config/Code/User/workspaceStorage" "${path[0]}/.config/Code/CachedData" "${path[0]}/.config/Code/GPUCache"
-clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
+check_executable "microsoft-edge" && clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/Service Worker/ScriptCache" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "${path[0]}/.config/microsoft-edge/Default/load_statistics.db" "/opt/microsoft/msedge/locales"
+check_executable "code" && clear_cache "Code cache" "${path[0]}/.config/Code/CachedExtensionVSIXs" "${path[0]}/.config/Code/Cache/Cache_Data" "${path[0]}/.config/Code/User/workspaceStorage" "${path[0]}/.config/Code/CachedData" "${path[0]}/.config/Code/GPUCache"
+check_executable "firefox" && clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
+check_executable "librewolf" && clear_cache "Librewolf cache" "${path[0]}/.cache/librewolf/*/cache2/entries"
 clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
 clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
 clear_cache "Journal logs" "${path[1]}/log/journal"
