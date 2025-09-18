@@ -3,7 +3,7 @@
 path=(/home/* /var)
 
 clear_log(){
-	if [ $(du -s ${path[0]}/clean.log | awk '{print $1}') -gt 12 ];then
+	if [ $(du -b ${path[0]}/clean.log | awk '{print $1}') -gt 1000000 ];then
 	    > ${path[0]}/clean.log
 	fi
 }
@@ -28,13 +28,24 @@ check_executable(){
 	[[ $(which $1 > /dev/null 2>&1 && echo $?) == "0" ]]
 }
 
+delete_files(){
+	local received_array=("$@") 
+	for item in "${received_array[@]}"; do 
+		if [ -d "$item" ]; then
+			rm -rf "$item" 2>&1
+		elif [ -f "$item" ];then
+			rm -f "$item" 2>&1
+		fi
+	done
+}
+
 clear_cache(){
 	case $1 in
 		"Edge cache")
 			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d "$3" ] && du -c "$3" | awk '/total/ {print $1}' || echo 0) + $([ -d "$4" ] && du -c "$4" | awk '/total/ {print $1}' || echo 0) + $([ -d "$5" ] && du -c "$5" | awk '/total/ {print $1}' || echo 0) + $([ -f $6/*.blob ] && du -c $6/*.blob | awk '/total/ {print $1}' || echo 0) + $([ -f "$7" ] && du -c "$7" | awk '/total/ {print $1}' || echo 0) + $(du -s $8 | awk '{print $1}')))
 		;;
 		"Code cache")
-			cache=$(($(du -s $2 | awk '{print $1}') + $(du -s $3 | awk '{print $1}') + $(du -s $4 | awk '{print $1}') + $(du -s $5 | awk '{print $1}') + $(du -s $6 | awk '{print $1}')))
+			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d $3 ] && du -c $3 | awk '/total/ {print $1}' || echo 0) + $([ -d $4 ] && du -c $4 | awk '/total/ {print $1}' || echo 0) + $([ -d $5 ] && du -c $5 | awk '/total/ {print $1}' || echo 0) + $([ -d $6 ] && du -c $6 | awk '/total/ {print $1}' || echo 0)))
 		;;
 		*)
 			cache=$(du -s $2 | awk '{print $1}')
@@ -48,19 +59,14 @@ clear_cache(){
 					dnf clean all > /dev/null
 				;;
 				"Edge cache")
-				        edge_arr=("$2" "$3" "$4" "$5" "$7")
-				        for item in "${edge_arr[@]}"; do 
-				        	if [ -d "$item" ]; then
-						  rm -r "$item"/* 2>&1
-						elif [ -f "$item" ];then
-						  rm "$item" 2>&1
-						fi
-				        done
+					edge_arr=("$2" "$3" "$4" "$5" "$7")
+					delete_files "${edge_arr[@]}" 
 					rm -rf $6/*.blob 2>&1
 					sudo find $8/* -maxdepth 0 -type f -not -iname "en-US.pak" -exec rm -r {} \; 2>&1
 				;;
 				"Code cache")
-					rm -rf $2/* $3/* $4/* $5/* $6/* 2>&1
+					code_arr=("$2" "$3" "$4" "$5" "$6")
+					delete_files "${code_arr[@]}" 
 				;;
 				*)
 					rm -rf $2/* 2>&1
