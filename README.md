@@ -1,6 +1,6 @@
 # 🧹 fedora-cleanup
 
-A cleanup script to clear caches and logs in Fedora (Tested in Fedora 41)
+A cleanup script to clear caches and logs in Fedora (Tested in Fedora 42)
 
 ---
 
@@ -11,12 +11,13 @@ This script cleans the following:
 3. Microsoft Edge cache ($HOME/.cache/microsoft-edge/Default/Cache/Cache_Data, $HOME/.cache/microsoft-edge/Default/Code Cache/js, $HOME/.config/microsoft-edge/Default/Service Worker/CacheStorage, $HOME/.config/microsoft-edge/Default/Service Worker/ScriptCache, $HOME/.config/microsoft-edge/Default/IndexedDB, $HOME/.config/microsoft-edge/Default/load_statistics.db, /opt/microsoft/msedge/locales)
 4. VS Code cache ($HOME/.config/Code/CachedExtensionVSIXs, $HOME/.config/Code/Cache/Cache_Data, $HOME/.config/Code/User/workspaceStorage, $HOME/.config/Code/CachedData, $HOME/.config/Code/GPUCache)
 5. Firefox cache ($HOME/.cache/mozilla/firefox/*/cache2/entries)
-6. DNF5 cache (/var/cache/libdnf5)
-7. Coredumps (/var/lib/systemd/coredump)
-8. Journal logs (/var/log/journal)
-9. Old Nvidia nsight-compute folders (/opt/Nvidia/nsight-compute/xxxx.x.x)
-10. Old Nvidia nsight-systems folders (/opt/Nvidia/nsight-systems/xxxx.x.x)
-11. Old Nvidia CUDA folders (/usr/local/cuda-xx.x)
+6. Librewolf cache ($HOME/.cache/librewolf/*/cache2/entries)
+7. DNF5 cache (/var/cache/libdnf5)
+8. Coredumps (/var/lib/systemd/coredump)
+9. Journal logs (/var/log/journal)
+10. Old Nvidia nsight-compute folders (/opt/Nvidia/nsight-compute/xxxx.x.x)
+11. Old Nvidia nsight-systems folders (/opt/Nvidia/nsight-systems/xxxx.x.x)
+12. Old Nvidia CUDA folders (/usr/local/cuda-xx.x)
 
 ---
 
