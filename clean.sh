@@ -42,7 +42,7 @@ delete_files(){
 clear_cache(){
 	case $1 in
 		"Edge cache")
-			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d "$3" ] && du -c "$3" | awk '/total/ {print $1}' || echo 0) + $([ -d "$4" ] && du -c "$4" | awk '/total/ {print $1}' || echo 0) + $([ -d "$5" ] && du -c "$5" | awk '/total/ {print $1}' || echo 0) + $([ -f $6/*.blob ] && du -c $6/*.blob | awk '/total/ {print $1}' || echo 0) + $([ -f "$7" ] && du -c "$7" | awk '/total/ {print $1}' || echo 0) + $(du -s $8 | awk '{print $1}')))
+			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d "$3" ] && du -c "$3" | awk '/total/ {print $1}' || echo 0) + $([ -d "$4" ] && du -c "$4" | awk '/total/ {print $1}' || echo 0) + $([ -d "$5" ] && du -c "$5" | awk '/total/ {print $1}' || echo 0) + $([ -f "$6/*.blob" ] && du -c "$6/*.blob" | awk '/total/ {print $1}' || echo 0) + $([ -f "$7" ] && du -c "$7" | awk '/total/ {print $1}' || echo 0) + $(du -s $8 | awk '{print $1}')))
 		;;
 		"Code cache")
 			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d $3 ] && du -c $3 | awk '/total/ {print $1}' || echo 0) + $([ -d $4 ] && du -c $4 | awk '/total/ {print $1}' || echo 0) + $([ -d $5 ] && du -c $5 | awk '/total/ {print $1}' || echo 0) + $([ -d $6 ] && du -c $6 | awk '/total/ {print $1}' || echo 0)))
