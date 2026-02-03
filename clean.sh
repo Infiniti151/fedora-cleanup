@@ -1,23 +1,47 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 path=(/home/* /var)
+already_cleaned=false
+akmod_files_to_keep=$(( $(rpm -qa kernel | wc -l)*2 + 1 )) # Based on the number of kernels installed
+
+# Define color codes 
+RED='\033[1;31m' 
+GREEN='\033[1;32m' 
+MAGENTA='\033[1;35m'
+CYAN='\033[1;36m'
+NC='\033[0m' # No Color (reset)
+DASHES="-----------------------------"
+
+add_to_log(){
+	[ $1 == "Total" ] && echo $DASHES >> "${path[0]}"/clean.log
+    printf "%-10s : %s %s\n" "$1" "$2" "$3" >> "${path[0]}"/clean.log
+}
+
+log_message(){
+	printf "${MAGENTA}%-10s ${CYAN}| ${RED}%s${NC}\n" "$1" "$2"
+    add_to_log "$1" "$2"
+}
 
 clear_log(){
-	if [ $(du -b ${path[0]}/clean.log | awk '{print $1}') -gt 1000000 ];then
-	    > ${path[0]}/clean.log
+	if [ "$(stat -c%s "${path[0]}/clean.log")" -gt 1000000 ];then
+	    :> "${path[0]}/clean.log"
 	fi
 }
 
-convert_to_GB(){
-    echo $1 | awk '{$1=$1/(1024^2); printf "%.2f %s\n", $1,"GB";}'
+log_cache(){
+	if [ $2 -ne 0 ]; then
+        calculate_cache "$2"
+        calculate_total
+        log_message "${1%% *}" "$fin"
+    fi
 }
 
-add_to_log(){
-    echo -e "$1: $2" >> ${path[0]}/clean.log
+convert_to_SI(){
+	echo "$1" | numfmt --from-unit=1024 --to=si | sed 's/\([0-9]\)\([A-Z]\)/\1 \2/I'
 }
 
-calculate_GB(){
-    fin=$(convert_to_GB $1)
+calculate_cache(){
+    fin=$(convert_to_SI "$1")
 }
 
 calculate_total(){
@@ -25,7 +49,7 @@ calculate_total(){
 }
 
 check_executable(){
-	[[ $(which $1 > /dev/null 2>&1 && echo $?) == "0" ]]
+	[[ $(command -v "$1" >/dev/null 2>&1 && echo $?) == "0" ]]
 }
 
 delete_files(){
@@ -39,25 +63,71 @@ delete_files(){
 	done
 }
 
+keep_nth_latest() {
+    cache=0
+	already_cleaned=true
+
+    # Ensure directory exists and keep count is numeric
+    [ -d "$2" ] || return 1
+    [[ "$3" =~ ^[0-9]+$ ]] || return 1
+
+    # Build list of dirs: either subdirs or the directory itself
+    mapfile -t dirs < <(find "$2" -mindepth 1 -maxdepth 1 -type d)
+    if [ ${#dirs[@]} -eq 0 ]; then
+        dirs=("$2")
+    fi
+
+    for dir in "${dirs[@]}"; do
+        count=$(ls -At "$dir" 2>/dev/null | wc -l)
+        if [ "$count" -le "$3" ]; then
+            continue
+        fi
+        # Files to keep = newest N
+        keep_files=( $(ls -At "$dir" | head -n "$3") )
+        for file in "$dir"/*; do
+            [ -e "$file" ] || continue
+            fname=$(basename "$file")
+            if ! printf '%s\n' "${keep_files[@]}" | grep -qx "$fname"; then
+                cache=$(($(du -c "$file" | awk 'END {print $1}') + cache))
+                sudo rm "$file"
+            fi
+        done
+    done
+
+    log_cache "$1" "$cache"
+}
+
+clean_dnf(){
+	already_cleaned=true
+	cache=$(sudo dnf clean all | awk -F'of ' '{print $2}' | awk '{print $1 * 1024}')
+	log_cache "$1" "$cache"
+}
+
 clear_cache(){
 	case $1 in
+	    "DNF cache")
+			clean_dnf "$1"
+		;;
 		"Edge cache")
-			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d "$3" ] && du -c "$3" | awk '/total/ {print $1}' || echo 0) + $([ -d "$4" ] && du -c "$4" | awk '/total/ {print $1}' || echo 0) + $([ -d "$5" ] && du -c "$5" | awk '/total/ {print $1}' || echo 0) + $([ -f "$6/*.blob" ] && du -c "$6/*.blob" | awk '/total/ {print $1}' || echo 0) + $([ -f "$7" ] && du -c "$7" | awk '/total/ {print $1}' || echo 0) + $(du -s $8 | awk '{print $1}')))
+			cache=$(du -c "$2" "$3" "$4" "$5" "$6"/*.blob "$7" "$8" 2>/dev/null | awk 'END {print $1}')
 		;;
 		"Code cache")
-			cache=$(($([ -d $2 ] && du -c $2 | awk '/total/ {print $1}' || echo 0) + $([ -d $3 ] && du -c $3 | awk '/total/ {print $1}' || echo 0) + $([ -d $4 ] && du -c $4 | awk '/total/ {print $1}' || echo 0) + $([ -d $5 ] && du -c $5 | awk '/total/ {print $1}' || echo 0) + $([ -d $6 ] && du -c $6 | awk '/total/ {print $1}' || echo 0)))
+			cache=$(du -c "$2" "$3" "$4" "$5" "$6" 2>/dev/null | awk 'END {print $1}')
+		;;
+		"Akmods cache")
+			keep_nth_latest "$1" "$2" $akmod_files_to_keep
+		;;
+		"Wine cache")
+			keep_nth_latest "$1" "$2" 1
 		;;
 		*)
-			cache=$(du -s $2 | awk '{print $1}')
+			cache=$(du -c $2/* 2>/dev/null | awk 'END {print $1}')
 		;;
 	esac
-	calculate_GB $cache
-	if [ "$fin" != "0.00 GB" ];then
+	calculate_cache $cache
+	if [[ "$fin" =~ [1-9] && $already_cleaned = false ]]; then
 	        calculate_total
 	        case $1 in
-				"DNF cache")
-					dnf clean all > /dev/null
-				;;
 				"Edge cache")
 					edge_arr=("$2" "$3" "$4" "$5" "$7")
 					delete_files "${edge_arr[@]}" 
@@ -72,9 +142,9 @@ clear_cache(){
 					rm -rf $2/* 2>&1
 				;;
 			esac
-		echo -e "Deleted \033[0;35m$1: \033[0;31m$fin\033[0m"
-                add_to_log "$1" "$fin"
+			log_message "${1%% *}" "$fin"
     fi
+	already_cleaned=false
 }
 
 clear_nvidia(){
@@ -93,17 +163,17 @@ clear_nvidia(){
 			j="0"
 			for j in "${a[@]}"
 			do
-			   nvidia_cache=$(du -s $3/$i/$j | awk '{print $1}')
-			   cache=$(($cache + $nvidia_cache))
+			   nvidia_cache=$(du -c $3/$i/$j | awk 'END {print $1}')
+			   cache=$((cache + nvidia_cache))
 			   sudo rm -rf "$3/$i/$j"
-			   echo -e "Deleted \033[0;31m$j: \033[0;33m$(convert_to_GB $nvidia_cache $i)\033[0m"
+			   echo -e "Deleted \033[0;31m$j: \033[0;33m$(convert_to_SI $nvidia_cache $i)\033[0m"
 			done
-			add_to_log "$1-$i" $(convert_to_GB $cache)
+			add_to_log "$1-$i" $(convert_to_SI $cache)
 			calculate_total
 		fi
 	done
 
-	x=$(ls "$4" | grep "$2-" | wc -l)
+	x=$(ls "$4" | grep -c "$2-")
 	if [ $x -gt 2 ];then
 		readarray a < <(ls $4 | grep "$2-[1-9][1-9]$" | sort -r)
 		readarray b < <(ls $4 | grep "$2-[1-9][1-9].[1-9]$" | sort -r)
@@ -126,12 +196,12 @@ clear_nvidia(){
 			cache=0
 			for i in "${b[@]}"
 			do
-				cuda_cache=$(du -s $4/$i | awk '{print $1}')
-				cache=$(($cache + $cuda_cache))
+				cuda_cache=$(du -c $4/$i | awk 'END {print $1}')
+				cache=$((cache + cuda_cache))
 				sudo rm -rf "$4/$i"
-				echo -e "Deleted \033[0;31m$i: \033[0;33m$(convert_to_GB $cuda_cache)\033[0m"
+				echo -e "Deleted \033[0;31m$i: \033[0;33m$(convert_to_SI $cuda_cache)\033[0m"
 			done
-			add_to_log "$1-$2" $(convert_to_GB $cache)
+			add_to_log "$1-$2" $(convert_to_SI $cache)
 			calculate_total
 		fi
 	fi
@@ -139,19 +209,23 @@ clear_nvidia(){
 
 clear_log
 
-echo "------$(date +'%d/%m/%y %r')------" >> ${path[0]}/clean.log
+echo -e "\n[$(date +'%d/%m/%y %r')]" >> ${path[0]}/clean.log
+printf "${CYAN}%s\n%-10s | %s\n%s${NC}\n" "$DASHES" "Component" "Freed Space" "$DASHES"
 
-clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails/x-large"
-clear_cache "Pip cache" "${path[0]}/.cache/pip"
+check_executable "pip" && clear_cache "Pip cache" "${path[0]}/.cache/pip"
 check_executable "microsoft-edge" && clear_cache "Edge cache" "${path[0]}/.cache/microsoft-edge/Default/Cache/Cache_Data" "${path[0]}/.cache/microsoft-edge/Default/Code Cache/js" "${path[0]}/.config/microsoft-edge/Default/Service Worker/CacheStorage" "${path[0]}/.config/microsoft-edge/Default/Service Worker/ScriptCache" "${path[0]}/.config/microsoft-edge/Default/IndexedDB" "${path[0]}/.config/microsoft-edge/Default/load_statistics.db" "/opt/microsoft/msedge/locales"
 check_executable "code" && clear_cache "Code cache" "${path[0]}/.config/Code/CachedExtensionVSIXs" "${path[0]}/.config/Code/Cache/Cache_Data" "${path[0]}/.config/Code/User/workspaceStorage" "${path[0]}/.config/Code/CachedData" "${path[0]}/.config/Code/GPUCache"
 check_executable "firefox" && clear_cache "Firefox cache" "${path[0]}/.cache/mozilla/firefox/$(ls ${path[0]}/.cache/mozilla/firefox)/cache2/entries"
 check_executable "librewolf" && clear_cache "Librewolf cache" "${path[0]}/.cache/librewolf/*/cache2/entries"
-clear_cache "DNF cache" "${path[1]}/cache/libdnf5"
-clear_cache "Coredumps" "${path[1]}/lib/systemd/coredump"
+check_executable "akmods" && clear_cache "Akmods cache" "${path[1]}/cache/akmods"
+check_executable "wine" && clear_cache "Wine cache" "${path[0]}/.cache/wine"
+check_executable "nvidia-smi" && clear_cache "GLCache cache" "${path[0]}/.cache/nvidia/GLCache"
+check_executable "cuda-toolkit" && clear_nvidia "Nvidia" "cuda" "/opt/nvidia" "/usr/local"
+clear_cache "Thumbnails cache" "${path[0]}/.cache/thumbnails"
+clear_cache "Coredumps cache" "${path[1]}/lib/systemd/coredump"
 clear_cache "Journal logs" "${path[1]}/log/journal"
-clear_nvidia "Nvidia" "cuda" "/opt/nvidia" "/usr/local"
+clear_cache "DNF cache"
 
-total=$(convert_to_GB $total)
-add_to_log "--------------------------------\nTotal storage recovered" "$total"
-echo -e "\nTotal storage recovered: \033[0;32m$total\033[0m"
+total=$(convert_to_SI $total)
+add_to_log "Total" "$total" "✅"
+printf "${CYAN}%s\n%-10s | ${GREEN}%s\n${CYAN}%s${NC}\n" "$DASHES" "Total" "$total" "$DASHES"
