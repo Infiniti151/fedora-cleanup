@@ -32,10 +32,10 @@ This script cleans the following:
 
 ## 🖥️ Screenshots
 
-![alt text](/images/terminal.png)
-Terminal
+![alt text](/images/terminal.png)  
+*Terminal*
 
+![alt text](/images/log.png)  
+*Log*
 
-![alt text](/images/log.png)
-Log
 
