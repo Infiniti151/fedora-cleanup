@@ -31,9 +31,11 @@ This script cleans the following:
 ---
 
 ## 🖥️ Screenshots
-Terminal screenshot:
-![alt text](/images/terminal.png)
 
-Log screenshot:
+![alt text](/images/terminal.png)
+Terminal
+
+
 ![alt text](/images/log.png)
+Log
 
